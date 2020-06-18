@@ -17,8 +17,6 @@ func main() {
 	flag.IntVar(&timeLimit, "time", 10, "Declare test time limit in seconds")
 	flag.Parse()
 
-	fmt.Print("Press 'Enter' to continue...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	questionMap, questionsCount := parseQuiz(filename)
 
 	_, score := startQuiz(questionMap, timeLimit)
@@ -53,6 +51,9 @@ func parseQuiz(filename string) (map[string]string, int) {
 func startQuiz(q map[string]string, timeLimit int) (map[string][]string, int) {
 	result := map[string][]string{}
 	score := 0
+
+	fmt.Print("Press 'Enter' to continue...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 	go timer(timeLimit)
 
