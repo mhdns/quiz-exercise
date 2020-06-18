@@ -3,13 +3,30 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
-	file, err := os.Open("questions.csv")
+	var filename string
+	var timeLimit int
+	flag.StringVar(&filename, "filename", "questions.csv", "Declare the csv file containing the questions")
+	flag.IntVar(&timeLimit, "time", 10, "Declare test time limit in seconds")
+	flag.Parse()
+
+	questionMap, questionsCount := parseQuiz(filename)
+	_, score := startQuiz(questionMap, timeLimit)
+
+	fmt.Printf("You scored %v/%v!\n", score, questionsCount)
+
+}
+
+func parseQuiz(filename string) (map[string]string, int) {
+	fmt.Println(filename, " being parsed...")
+	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -27,15 +44,14 @@ func main() {
 		questionMap[v[0]] = v[1]
 	}
 
-	_, score := startQuiz(questionMap, 30)
-
-	fmt.Printf("You scored %v/%v!\n", score, len(questions))
-
+	return questionMap, len(questions)
 }
 
-func startQuiz(q map[string]string, n int) (map[string][]string, int) {
+func startQuiz(q map[string]string, timeLimit int) (map[string][]string, int) {
 	result := map[string][]string{}
 	score := 0
+
+	go timer(timeLimit)
 
 	for k, v := range q {
 
@@ -56,4 +72,10 @@ func startQuiz(q map[string]string, n int) (map[string][]string, int) {
 		}
 	}
 	return result, score
+}
+
+func timer(t int) {
+	time.Sleep(time.Duration(t) * time.Second)
+	fmt.Println("\nTimes up!")
+	os.Exit(0)
 }
