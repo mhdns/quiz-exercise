@@ -17,7 +17,10 @@ func main() {
 	flag.IntVar(&timeLimit, "time", 10, "Declare test time limit in seconds")
 	flag.Parse()
 
+	fmt.Print("Press 'Enter' to continue...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	questionMap, questionsCount := parseQuiz(filename)
+
 	_, score := startQuiz(questionMap, timeLimit)
 
 	fmt.Printf("You scored %v/%v!\n", score, questionsCount)
@@ -25,7 +28,7 @@ func main() {
 }
 
 func parseQuiz(filename string) (map[string]string, int) {
-	fmt.Println(filename, " being parsed...")
+	// fmt.Println(filename, " being parsed...")
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalln(err)
