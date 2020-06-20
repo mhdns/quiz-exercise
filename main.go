@@ -19,7 +19,7 @@ func main() {
 
 	questionMap, questionsCount := parseQuiz(filename)
 
-	_, score := startQuiz(questionMap, timeLimit)
+	_, score := startQuiz(questionMap, questionsCount, timeLimit)
 
 	fmt.Printf("You scored %v/%v!\n", score, questionsCount)
 
@@ -48,14 +48,27 @@ func parseQuiz(filename string) (map[string]string, int) {
 	return questionMap, len(questions)
 }
 
-func startQuiz(q map[string]string, timeLimit int) (map[string][]string, int) {
+func startQuiz(q map[string]string, questionCount, timeLimit int) (map[string][]string, int) {
 	result := map[string][]string{}
 	score := 0
+	scoreChan := make(chan int, questionCount+1)
+	totalChan := make(chan int, 1)
+	closeChan := make(chan int)
 
 	fmt.Print("Press 'Enter' to continue...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 
-	go timer(timeLimit)
+	totalChan <- questionCount
+	go timer(timeLimit, scoreChan, totalChan, closeChan)
+
+	go func(closeChan chan int) {
+		select {
+		case <-closeChan:
+			close(scoreChan)
+			close(totalChan)
+			return
+		}
+	}(closeChan)
 
 	for k, v := range q {
 
@@ -70,16 +83,30 @@ func startQuiz(q map[string]string, timeLimit int) (map[string][]string, int) {
 			result[k] = []string{v, ans, "correct"}
 			fmt.Println("Correct!")
 			score++
+			scoreChan <- 1
 		} else {
 			fmt.Println("Wrong!")
 			result[k] = []string{v, ans, "wrong"}
 		}
 	}
+	close(scoreChan)
+	close(totalChan)
+	close(closeChan)
 	return result, score
 }
 
-func timer(t int) {
+func timer(t int, scoreChan, totalChan, closeChan chan int) {
 	time.Sleep(time.Duration(t) * time.Second)
-	fmt.Println("\nTimes up!")
+
+	questionCount := <-totalChan
+	finalScore := 0
+	closeChan <- 0
+	close(closeChan)
+
+	for v := range scoreChan {
+		finalScore += v
+	}
+
+	fmt.Printf("\nTimes up! You scored %v/%v!\n", finalScore, questionCount)
 	os.Exit(0)
 }
